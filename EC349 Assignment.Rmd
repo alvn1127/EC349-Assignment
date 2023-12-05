@@ -1,0 +1,104 @@
+---
+title: "EC349 Assignment"
+author: "Alvin Ho"
+date: "`r Sys.Date()`"
+output: html_document
+---
+# Tabula statement
+
+We're part of an academic community at Warwick.
+
+Whether studying, teaching, or researching, we’re all taking part in an expert conversation which must meet standards of academic integrity. When we all meet these standards, we can take pride in our own academic achievements, as individuals and as an academic community.
+
+Academic integrity means committing to honesty in academic work, giving credit where we've used others' ideas and being proud of our own achievements.
+
+In submitting my work I confirm that:
+
+1. I have read the guidance on academic integrity provided in the Student Handbook and understand the University regulations in relation to Academic Integrity. I am aware of the potential consequences of Academic Misconduct.
+
+2. I declare that the work is all my own, except where I have stated otherwise.
+
+3. No substantial part(s) of the work submitted here has also been submitted by me in other credit bearing assessments courses of study (other than in certain cases of a resubmission of a piece of work), and I acknowledge that if this has been done this may lead to an appropriate sanction.
+
+4. Where a generative Artificial Intelligence such as ChatGPT has been used I confirm I have abided by both the University guidance and specific requirements as set out in the Student Handbook and the Assessment brief. I have clearly acknowledged the use of any generative Artificial Intelligence in my submission, my reasoning for using it and which generative AI (or AIs) I have used. Except where indicated the work is otherwise entirely my own.
+
+5. I understand that should this piece of work raise concerns requiring investigation in relation to any of points above, it is possible that other work I have submitted for assessment will be checked, even if marks (provisional or confirmed) have been published.
+
+6. Where a proof-reader, paid or unpaid was used, I confirm that the proofreader was made aware of and has complied with the University’s proofreading policy.
+
+7. I consent that my work may be submitted to Turnitin or other analytical technology. I understand the use of this service (or similar), along with other methods of maintaining the integrity of the academic process, will help the University uphold academic standards and assessment fairness.
+
+Privacy statement
+
+The data on this form relates to your submission of coursework. The date and time of your submission, your identity, and the work you have submitted will be stored. We will only use this data to administer and record your coursework submission.
+
+Related articles
+
+[Reg. 11 Academic Integrity (from 4 Oct 2021)](https://warwick.ac.uk/services/gov/calendar/section2/regulations/academic_integrity/)
+
+[Guidance on Regulation 11](https://warwick.ac.uk/services/aro/dar/quality/az/acintegrity/framework/guidancereg11/)
+
+[Proofreading Policy](https://warwick.ac.uk/services/aro/dar/quality/categories/examinations/policies/v_proofreading/)  
+
+[Education Policy and Quality Team](https://warwick.ac.uk/services/aro/dar/quality/az/acintegrity/framework/guidancereg11/)
+
+[Academic Integrity (warwick.ac.uk)](https://warwick.ac.uk/students/learning-experience/academic_integrity)
+
+# Introduction
+
+Yelp is a review company which allows users to post ratings on a scale from 1-5 of businesses and leave reviews. In this report, I aim to predict the number of “stars” given by user i to business j using the Yelp dataset. The datasets selected for this assignment are “business_data”, “review_data” and “user_data”. 
+I will apply John Rollins’ General Data Science Methodology in this assignment. This DS methodology was chosen as it is very adaptable and can be used in complex and large datasets like this one. The importance of data preparation in the methodology ensures ensures my data is thoroughly prepared. The immediate problem identified is the large datasets and deciding which variables to include to combine into the final dataset since this would help to reduce the time needed to run (and allow for the model to run in the first place). To tackle this problem, I needed to look closely at all the variables, see what type of variable they are (numeric, string etc), and determine how to clean them using packages such as tidyverse.  
+
+# Cleaning Datasets
+Starting with user data, I noticed that one of the variables “elite”, was displaying the years in which the user was an “elite” member had an error when the user was an elite member in 2020, as it was being displayed as “20,20”. This is an issue as the years were being split by commas, thus any data extraction from this variable would be incorrect. After changing this, I decided to look at the number of years in which the user was an elite member, which was done by counting the number of commas in the element and adding 1, or zero if the cell was empty. The same method was used to determine the number of friends the user had from the “friends” variable. Another variable that needed to be cleaned was “yelping_since”. Firstly, it was in string format, and after converting to date format, I extracted only the year. This was done not only to simplify the data but also can be a more potent variable for predictive modelling as it provides a quantitative measure of the user's long-term commitment and activity, which could be more predictive of their rating patterns than simply knowing the specific years they were elite. I also included review count, average star, fans and compliments.  
+
+The business data was the trickiest dataset to clean, especially the attributes dataframe, which had columns with attributes of the business e.g. ResturantsTakeOut with True or False as the responses. In addition, there were some cases where the attributes were nested strings e.g. business_parking where I attempted to parse and extract these values, however, I was unsuccessful. Furthermore, there were lots of missing data points, which removed the option of just deleting all cells that were missing as that would diminish the number of observations drastically. I was left with either replacing the missing variables with -1, which I felt would distort the data or imputing the data, which took too long to attempt. In the end, I decided to not include the attributes dataframe in my models. 
+
+Moving to the category’s variable, it showed the various categories of the business separated by commas. I decided to create a dummy for each of the main categories on Yelp (1 if the business has the category listed) to simplify the dataset. Finally, I created a function to calculate the hours a business was open for each day. I also included stars, review count, and is_open, and from the review_data I used review_stars, which is the dependent variable, and reactions to the review. Finally, I combined all the datasets to create “final_dataset”.
+
+
+# Models
+With this dataset, I created a partition to split my data into training and testing sets. The first estimator I used was a Least Absolute Shrinkage and Selection Operator (LASSO). The LASSO estimator helps to punish overfitting, which may fit the training data better but may also fit noise. This is useful as my dataset contains a lot of parameters and allows me to see which variables are useful. It does this by introducing a penalization term λ. When λ=0, LASSO produces the same coefficients as a least squares regression. As λ increases, more coefficients are set to zero, simplifying the model. 
+
+LASSO estimator:
+$$
+\arg\min_{\beta} \left\{ \sum_{i=1}^{n} (Y'_i - X'_i\beta)^2 + \lambda \sum_{j=1}^{p} |\beta_j| \right\}
+$$
+
+where \( (Y'_i - X'_i\beta)^2 \) is the mimimization of sum of square residuals, \( \lambda \sum_{j=1}^{p} |\beta_j| \) is the penalisation term.
+
+When optimising the lambda which minimizes cross-validation error (balancing between fitting training data and predicting testing data), the LASSO estimator produced a mean squared error of 1.174839. I repeated this with the Ridge model, which also applies a penalization term λ, but it shrinks coefficients towards 0 instead of exactly 0. This produced an MSE of 1.177312. 
+
+Ridge estimator:
+$$
+\arg\min_{\beta} \left\{ \sum_{i=1}^{n} (Y'_i - X'_i\beta)^2 + \lambda \sum_{j=1}^{p} \beta_j^2 \right\}
+$$
+
+As a result of including all variables, a Ridge may be less interpretable. However, it may handle multicollinearity better than LASSO since it may randomly select one variable from a group of highly correlated variables and shrink the others to zero whilst increasing that one variable. The dataframes for the coefficients of the variables in LASSO and ridge are shown below, including graphs showing the performance of the LASSO and ridge model across different λ values.
+```{r}
+library(knitr)
+load("C:/Users/Alvin's PC/Desktop/Assignment/coef_lasso_df.Rdata")
+kable(coef_lasso_df)
+
+```
+
+
+![LASSO λ MSE graph](C:/Users\Alvin's PC\Desktop\Assignment\LASSO lambda MSE graph.png)
+```{r}
+library(knitr)
+load("C:/Users/Alvin's PC/Desktop/Assignment/coef_ridge_df.Rdata")
+kable(coef_ridge_df)
+
+```
+
+![Ridge λ MSE graph](C:/Users\Alvin's PC\Desktop\Assignment\Ridge lambda MSE graph.png)
+
+
+There is not a big difference between these two models. Given the rating scale is from 1-5, a ~1.17 deviation from the actual ratings is a slightly significant error. One reason could be a non-linear interaction between the number of stars given by user i to business j. 
+
+As the stars the user gives are categorical, I looked at trees. However, looking at a single tree is not robust, i.e., small changes in the data can lead to big effects on the tree. This leads to the next set of models, bagging, random forest and boosting, which are all models with learning. Bootstrap aggregating (bagging) reduces overfitting by training multiple decision trees on different subsets of the training data and then averaging their predictions. Random Forest, a specialized form of bagging, introduces randomness in the predictor selection process to reduce the correlation across predictors. Boosting builds models sequentially, with each new model correcting the errors of its predecessors. I believed that random forest would do ok in this case as they tend to perform poorly when the fraction of relevant variables is small, however from the LASSO regression we can see quite a few non-zero coefficients. However, a limitation of all these models is that they lose interpretability, and they require a lot more time to calculate compared to linear models. 
+
+Test set error rate is used to evaluate the effectiveness of these 3 models. It is the number of incorrect predictions divided by the total number of predictions. For random forest with 50 trees, the error rate was 0.416707. For 100 trees, the error rate was 0.41463. This minimal decrease led me to stick with 50 bagging and boosting iterations. However, these two models could not be loaded, highlighting the limitation of computational constraints.
+
+# Conclusion
+Overall, whilst I have tried to implement 2 different types of models, linear and learning models, I believe that whilst they are not the most accurate, and less interpretable than linear models, learning models are more appropriate for this case, as they help to capture more complex relationships in the data. Another model that could have been attempted would be to use sentiment analysis from the words of the review of the user.
